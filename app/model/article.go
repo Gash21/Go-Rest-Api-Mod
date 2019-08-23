@@ -9,8 +9,8 @@ type Article struct {
 
 var Articles []Article
 
-func FindArticle(id string, arr []Article) Article {
-	for _, article := range arr {
+func FindArticle(id string) Article {
+	for _, article := range Articles {
 		if article.Id == id {
 			return article
 		}
@@ -49,4 +49,8 @@ func Populate() {
 			Content: "Lorem Ipsum dolores",
 		},
 	}
+}
+
+func init() {
+	Populate()
 }

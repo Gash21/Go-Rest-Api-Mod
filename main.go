@@ -1,7 +1,7 @@
 package main
 
 import (
-	"ModRestApi/app/model"
+	model "ModRestApi/app/model"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -28,9 +28,8 @@ func handleRequests() {
 func singleArticle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Endpoint single article")
 	vars := mux.Vars(r)
-	key := vars["id"]
 
-	json.NewEncoder(w).Encode(model.FindArticle(key, model.Articles))
+	json.NewEncoder(w).Encode(model.FindArticle(vars["id"]))
 }
 
 func allArticles(w http.ResponseWriter, r *http.Request) {
