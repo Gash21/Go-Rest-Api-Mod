@@ -152,7 +152,6 @@ func createNewPhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Endpoint new photo")
 	photoId, _ := strconv.Atoi(r.Form["Id"][0])
-	fmt.Println(photoId)
 	model.CreateNewPhoto(
 		model.Photo{
 			Id:    photoId,
