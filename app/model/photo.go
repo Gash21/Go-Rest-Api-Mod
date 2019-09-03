@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -22,27 +25,16 @@ type Photo struct {
 
 var Photos []Photo
 var client *mongo.Client
+var clientOptions *options.ClientOptions
+var ctx context.Context
+var latihanCollection *mongo.Collection
+var hostMongo string
+var dbMongo string
 
 func FindPhoto(id int) Photo {
-	// for _, photo := range Photos {
-	// 	if photo.Id == id {
-	// 		return photo
-	// 	}
-	// }
-
 	filter := bson.D{{"id", id}}
 	var result Photo
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err5 := mongo.Connect(ctx, clientOptions)
-	if err5 != nil {
-		fmt.Printf("Mongo request failed")
-		return Photo{Id: 0}
-	}
-	fmt.Printf("Mongo request success")
-	collection := client.Database("newsfeed").Collection("latihan")
-	err := collection.FindOne(context.TODO(), filter).Decode(&result)
+	err := latihanCollection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
 		fmt.Println("error:", err)
 		return Photo{Id: 0}
@@ -52,20 +44,7 @@ func FindPhoto(id int) Photo {
 }
 
 func CreateNewPhoto(photo Photo) {
-	// fmt.Println(photo)
-	// Photos = append(Photos, photo)
-	//return article
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err5 := mongo.Connect(ctx, clientOptions)
-	if err5 != nil {
-		fmt.Printf("Mongo request failed")
-		return
-	}
-	fmt.Printf("Mongo request success")
-	collection := client.Database("newsfeed").Collection("latihan")
-	insertResult, err := collection.InsertOne(context.TODO(), photo)
+	insertResult, err := latihanCollection.InsertOne(context.TODO(), photo)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -73,14 +52,6 @@ func CreateNewPhoto(photo Photo) {
 }
 
 func UpdatePhoto(photo Photo) {
-	// for ii, photo := range Photos {
-	// 	if photo.Id == phot.Id {
-	// 		Photos[ii].Id = phot.Id
-	// 		Photos[ii].Title = phot.Title
-	// 		Photos[ii].Url = phot.Url
-	// 		Photos[ii].Thumb = phot.Thumb
-	// 	}
-	// }
 	filter := bson.M{
 		"id": photo.Id,
 	}
@@ -91,17 +62,8 @@ func UpdatePhoto(photo Photo) {
 			"thumb": photo.Thumb,
 		},
 	}
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	client, err5 := mongo.Connect(ctx, clientOptions)
-	if err5 != nil {
-		fmt.Printf("Mongo request failed")
-		return
-	}
-	fmt.Printf("Mongo request success")
-	collection := client.Database("newsfeed").Collection("latihan")
-	updateResult, err := collection.UpdateOne(context.TODO(), filter, update)
+	updateResult, err := latihanCollection.UpdateOne(context.TODO(), filter, update)
 	if err != nil {
 		fmt.Println("error:", err)
 	}
@@ -109,19 +71,28 @@ func UpdatePhoto(photo Photo) {
 }
 
 func populate() {
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("No .env file found")
+	}
+
+	hostMongo, exists := os.LookupEnv("MONGO_HOST")
+	dbMongo, exists1 := os.LookupEnv("MONGO_DB")
+	if !exists {
+		fmt.Println("Mongo Link Not found")
+	}
+	if !exists1 {
+		fmt.Println("Mongo DB Not found")
+	}
+	ctx, _ = context.WithTimeout(context.Background(), 10*time.Second)
+	clientOptions = options.Client().ApplyURI(hostMongo)
 	client, err5 := mongo.Connect(ctx, clientOptions)
 	if err5 != nil {
 		fmt.Printf("Mongo request failed")
 		return
 	}
 	fmt.Printf("Mongo request success")
-	collection := client.Database("newsfeed").Collection("latihan")
-	// filter := bson.D{{
-	// 	"id", 1,
-	// }}
-	cur, err := collection.Find(context.TODO(), bson.D{})
+	latihanCollection = client.Database(dbMongo).Collection("latihan")
+	cur, err := latihanCollection.Find(context.TODO(), bson.D{})
 	defer cur.Close(context.TODO())
 	if err != nil {
 
@@ -162,7 +133,7 @@ func populate() {
 					photoInterface = append(photoInterface, t)
 				}
 				fmt.Printf("Input to array success")
-				_, err4 := collection.InsertMany(context.TODO(), photoInterface)
+				_, err4 := latihanCollection.InsertMany(context.TODO(), photoInterface)
 
 				if err4 != nil {
 					fmt.Println(err4)
