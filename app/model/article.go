@@ -34,7 +34,7 @@ func UpdateArticle(art Article) {
 	}
 }
 
-func Populate() {
+func populateArticle() {
 	Articles = []Article{
 		Article{
 			Id:      "1",
@@ -52,5 +52,5 @@ func Populate() {
 }
 
 func init() {
-	Populate()
+	populateArticle()
 }

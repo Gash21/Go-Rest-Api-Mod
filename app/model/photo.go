@@ -36,7 +36,7 @@ func FindPhoto(id int) Photo {
 	var result Photo
 	err := latihanCollection.FindOne(context.TODO(), filter).Decode(&result)
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Print("error:", err)
 		return Photo{Id: 0}
 	} else {
 		return result
@@ -70,7 +70,7 @@ func UpdatePhoto(photo Photo) {
 	fmt.Printf("Matched %v documents and updated %v documents.\n", updateResult.MatchedCount, updateResult.ModifiedCount)
 }
 
-func populate() {
+func populatePhoto() {
 	if err := godotenv.Load(); err != nil {
 		fmt.Println("No .env file found")
 	}
@@ -148,5 +148,5 @@ func populate() {
 }
 
 func init() {
-	populate()
+	populatePhoto()
 }
