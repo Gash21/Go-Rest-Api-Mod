@@ -1,27 +1,42 @@
 package model
 
 import (
+	"fmt"
 	"log"
 	"os"
+
+	"github.com/go-pg/pg"
+	"github.com/go-pg/pg/orm"
 )
 
 type Author struct {
-	Id       int    `json:"Id"`
-	Name     string `json:"Name"`
-	Username string `json:"Username"`
-	Email    string `json:"Email"`
-	Phone    string `json:"Phone"`
+	Id       int    `json:"Id" sql:",pk"`
+	Name     string `json:"Name" sql:",notnull"`
+	Username string `json:"Username" sql:",notnull"`
+	Email    string `json:"Email" sql:",notnull, unique"`
+	Phone    string `json:"Phone" sql:",notnull"`
 }
 
 var Authors []Author
+var db *pg.DB
 
 func FindAuthor(id int) Author {
-	for _, auth := range Authors {
-		if auth.Id == id {
-			return auth
-		}
+	opt, err := pg.ParseURL("postgres://evaizee:secret@localhost:5432/tutorial?sslmode=disable")
+	if err != nil {
+		log.Println(err)
 	}
-	return Author{Id: 0}
+	db = pg.Connect(opt)
+
+	user := &Author{Id: id}
+	db.Begin()
+	defer db.Close()
+	err = db.Select(user)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	db.Close()
+	return Author{Id: user.Id, Name: user.Name, Username: user.Username, Email: user.Email, Phone: user.Phone}
 }
 
 func CreateNewAuthor(author Author) {
@@ -42,26 +57,66 @@ func UpdateAuthor(author Author) {
 }
 
 func populateAuthor() {
-	Authors = []Author{
-		Author{
-			Id:       1,
+	auth := new(Author)
+	exists, err := db.Model(auth).Where("id = ?", 1).Exists()
+
+	if err != nil {
+		panic(err)
+	}
+
+	if !exists {
+		author2 := Author{
+			Id:       3,
 			Name:     "Lorem Ipsum",
 			Username: "lorem2233",
-			Email:    "lorem@ips.biz",
+			Email:    "lorem@ips.biz.gas",
 			Phone:    "31845009",
-		},
-		Author{
-			Id:       1,
+		}
+
+		author3 := Author{
+			Id:       2,
 			Name:     "Joahn Doe",
 			Username: "johandou",
 			Email:    "lorjohanem@ips.biz",
 			Phone:    "318450008",
-		},
+		}
+
+		author1 := Author{
+			Id:       4,
+			Name:     "Lorem Ipsum",
+			Username: "lorem2233",
+			Email:    "lorem@ips.biz.co",
+			Phone:    "31845009",
+		}
+
+		err := db.Insert(author1, author2, author3)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Println("populate author done")
+	} else {
+		fmt.Println("populate author not running")
 	}
-	log.Println("populate author done")
 }
 
 func init() {
+	opt, err := pg.ParseURL("postgres://evaizee:secret@localhost:5432/tutorial?sslmode=disable")
+	if err != nil {
+		log.Println(err)
+	}
+	db = pg.Connect(opt)
+
+	db.Begin()
+
+	err1 := db.CreateTable(&Author{}, &orm.CreateTableOptions{
+		Temp:          false, // create temp table
+		FKConstraints: true,
+		IfNotExists:   true,
+	})
+	if err1 != nil {
+		log.Println(err1)
+	}
+
 	file, err := os.OpenFile("authorInfo.log", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664)
 	if err != nil {
 		log.Fatal(err)
@@ -71,4 +126,6 @@ func init() {
 	log.SetOutput(file)
 	log.Println("author ready")
 	populateAuthor()
+	db.Close()
+	log.Printf("connection closed")
 }

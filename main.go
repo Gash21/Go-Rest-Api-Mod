@@ -27,6 +27,7 @@ func handleRequests() {
 	myRouter.HandleFunc("/photo/update", updatePhoto)
 	myRouter.HandleFunc("/photos", allPhotos)
 	myRouter.HandleFunc("/photo/{id}", singlePhoto)
+	myRouter.HandleFunc("/author/{id}", singleAuthor)
 
 	log.Fatal(http.ListenAndServe(":8050", myRouter))
 }
@@ -200,6 +201,13 @@ func updatePhoto(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(b)
+}
+
+func singleAuthor(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("Endpoint single author")
+	vars := mux.Vars(r)
+	id, _ := strconv.Atoi(vars["id"])
+	json.NewEncoder(w).Encode(model.FindAuthor(id))
 }
 
 func main() {
