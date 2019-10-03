@@ -27,6 +27,8 @@ func handleRequests() {
 	myRouter.HandleFunc("/photo/update", updatePhoto)
 	myRouter.HandleFunc("/photos", allPhotos)
 	myRouter.HandleFunc("/photo/{id}", singlePhoto)
+	myRouter.HandleFunc("/author/create", createNewAuthor)
+	myRouter.HandleFunc("/author/update", updateAuthor)
 	myRouter.HandleFunc("/author/{id}", singleAuthor)
 
 	log.Fatal(http.ListenAndServe(":8050", myRouter))
@@ -208,6 +210,66 @@ func singleAuthor(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, _ := strconv.Atoi(vars["id"])
 	json.NewEncoder(w).Encode(model.FindAuthor(id))
+}
+
+func createNewAuthor(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(0)
+	if err != nil {
+		fmt.Fprintf(w, "ParseForm() err: %v", err)
+		return
+	}
+	fmt.Println("Endpoint new author")
+	id, _ := strconv.Atoi(r.Form["Id"][0])
+	model.CreateNewAuthor(
+		model.Author{
+			Id:       id,
+			Name:     r.Form["Name"][0],
+			Username: r.Form["Username"][0],
+			Email:    r.Form["Email"][0],
+			Phone:    r.Form["Phone"][0],
+		},
+	)
+
+	msg := model.Message{Message: "success", Status: "200"}
+	b, err := json.Marshal(msg)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(b)
+}
+
+func updateAuthor(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(0)
+	if err != nil {
+		fmt.Fprintf(w, "ParseForm() err: %v", err)
+		return
+	}
+	id, _ := strconv.Atoi(r.Form["Id"][0])
+	msg := model.Message{Message: "success", Status: "200"}
+
+	if id == 0 {
+		msg = model.Message{Message: "not found", Status: "400"}
+	} else {
+		model.UpdateAuthor(
+			model.Author{
+				Id:       id,
+				Username: r.Form["Username"][0],
+				Name:     r.Form["Name"][0],
+				Email:    r.Form["Email"][0],
+				Phone:    r.Form["Phone"][0],
+			},
+		)
+	}
+
+	b, err := json.Marshal(msg)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(b)
 }
 
 func main() {

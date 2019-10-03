@@ -29,7 +29,6 @@ func FindAuthor(id int) Author {
 
 	user := &Author{Id: id}
 	db.Begin()
-	defer db.Close()
 	err = db.Select(user)
 	if err != nil {
 		fmt.Println(err)
@@ -40,20 +39,40 @@ func FindAuthor(id int) Author {
 }
 
 func CreateNewAuthor(author Author) {
-	Authors = append(Authors, author)
-	//return article
+	opt, err := pg.ParseURL("postgres://evaizee:secret@localhost:5432/tutorial?sslmode=disable")
+	if err != nil {
+		log.Println(err)
+	}
+
+	db = pg.Connect(opt)
+	db.Begin()
+	err = db.Insert(&author)
+	fmt.Println(author)
+	if err != nil {
+		fmt.Println("err")
+		fmt.Println(err)
+	}
+	db.Close()
 }
 
 func UpdateAuthor(author Author) {
-	for ii, article := range Authors {
-		if article.Id == author.Id {
-			Authors[ii].Id = author.Id
-			Authors[ii].Name = author.Name
-			Authors[ii].Username = author.Username
-			Authors[ii].Email = author.Email
-			Authors[ii].Phone = author.Phone
-		}
+	opt, err := pg.ParseURL("postgres://evaizee:secret@localhost:5432/tutorial?sslmode=disable")
+	if err != nil {
+		log.Println(err)
 	}
+	fmt.Println("update")
+	db = pg.Connect(opt)
+	db.Begin()
+	_, err = db.Model(&author).Column("username", "name", "email", "phone").WherePK().Returning("*").Update()
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(author)
+	if err != nil {
+		fmt.Println("err")
+		fmt.Println(err)
+	}
+	db.Close()
 }
 
 func populateAuthor() {
@@ -66,7 +85,6 @@ func populateAuthor() {
 
 	if !exists {
 		author2 := Author{
-			Id:       3,
 			Name:     "Lorem Ipsum",
 			Username: "lorem2233",
 			Email:    "lorem@ips.biz.gas",
@@ -74,7 +92,6 @@ func populateAuthor() {
 		}
 
 		author3 := Author{
-			Id:       2,
 			Name:     "Joahn Doe",
 			Username: "johandou",
 			Email:    "lorjohanem@ips.biz",
@@ -82,14 +99,20 @@ func populateAuthor() {
 		}
 
 		author1 := Author{
-			Id:       4,
 			Name:     "Lorem Ipsum",
 			Username: "lorem2233",
 			Email:    "lorem@ips.biz.co",
 			Phone:    "31845009",
 		}
 
-		err := db.Insert(author1, author2, author3)
+		author4 := Author{
+			Name:     "Lorem Ipsum",
+			Username: "lorem2233",
+			Email:    "lorem@ips.biz",
+			Phone:    "31845009",
+		}
+
+		err := db.Insert(author1, author2, author3, author4)
 		if err != nil {
 			fmt.Println(err)
 		}
